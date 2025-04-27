@@ -60,4 +60,7 @@ server/jobs/
 # Temporary files
 tmp/
 temp/
-*.tmp 
+*.tmp
+
+node_modules/
+*/node_modules/
