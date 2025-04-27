@@ -1,0 +1,124 @@
+{
+  "meta": {
+    "fps": 10,
+    "resolution": [
+      1280,
+      800
+    ],
+    "start_time": 1745775135.7451909
+  },
+  "events": [
+    {
+      "t": 0,
+      "kind": "mouse_down",
+      "button": "left",
+      "x": 6,
+      "y": 4
+    },
+    {
+      "t": 147,
+      "kind": "mouse_up",
+      "button": "left",
+      "x": 6,
+      "y": 4
+    },
+    {
+      "t": 3178,
+      "kind": "mouse_down",
+      "button": "left",
+      "x": 2478,
+      "y": 21
+    },
+    {
+      "t": 3256,
+      "kind": "mouse_up",
+      "button": "left",
+      "x": 2478,
+      "y": 21
+    },
+    {
+      "t": 4744,
+      "kind": "mouse_down",
+      "button": "left",
+      "x": 1608,
+      "y": 232
+    },
+    {
+      "t": 4832,
+      "kind": "mouse_up",
+      "button": "left",
+      "x": 1608,
+      "y": 232
+    },
+    {
+      "t": 8568,
+      "kind": "mouse_down",
+      "button": "left",
+      "x": 2553,
+      "y": 1383
+    },
+    {
+      "t": 8688,
+      "kind": "mouse_up",
+      "button": "left",
+      "x": 2553,
+      "y": 1383
+    },
+    {
+      "t": 10944,
+      "kind": "mouse_down",
+      "button": "left",
+      "x": 0,
+      "y": 1411
+    },
+    {
+      "t": 11024,
+      "kind": "mouse_up",
+      "button": "left",
+      "x": 0,
+      "y": 1411
+    },
+    {
+      "t": 13528,
+      "kind": "mouse_down",
+      "button": "left",
+      "x": 2296,
+      "y": 1428
+    },
+    {
+      "t": 13595,
+      "kind": "mouse_up",
+      "button": "left",
+      "x": 2296,
+      "y": 1428
+    },
+    {
+      "t": 14215,
+      "kind": "mouse_down",
+      "button": "right",
+      "x": 2317,
+      "y": 1367
+    },
+    {
+      "t": 14312,
+      "kind": "mouse_up",
+      "button": "right",
+      "x": 2317,
+      "y": 1367
+    },
+    {
+      "t": 15360,
+      "kind": "mouse_down",
+      "button": "left",
+      "x": 2273,
+      "y": 1336
+    },
+    {
+      "t": 15402,
+      "kind": "mouse_up",
+      "button": "left",
+      "x": 2273,
+      "y": 1336
+    }
+  ]
+}

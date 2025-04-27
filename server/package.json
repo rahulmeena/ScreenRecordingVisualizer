@@ -15,10 +15,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.433.0",
     "@aws-sdk/lib-storage": "^3.433.0",
-    "bullmq": "^4.7.2",
-    "ffmpeg-static": "^5.2.0",
     "formidable": "^3.5.1",
-    "ioredis": "^5.3.2",
     "next": "14.0.0",
     "pg": "^8.11.3",
     "react": "^18",
@@ -27,6 +24,11 @@
     "sharp": "^0.32.6",
     "swr": "^2.2.4",
     "tailwindcss": "^3.3.3"
+  },
+  "optionalDependencies": {
+    "bullmq": "^4.7.2",
+    "ioredis": "^5.3.2",
+    "ffmpeg-static": "^5.2.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.1.4",
@@ -46,4 +48,4 @@
     "postcss": "^8",
     "typescript": "^5"
   }
-} 
+}

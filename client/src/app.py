@@ -119,8 +119,13 @@ class RecorderApp:
             self.recorder_thread.join(timeout=5.0)
             self.recorder_thread = None
         
-        self.screen_capture.stop()
-        self.input_logger.stop()
+        # Stop and get file paths
+        video_file = self.screen_capture.stop()
+        events_file = self.input_logger.stop()
+        
+        # Set files in timeline muxer
+        self.timeline_muxer.set_video_file(video_file)
+        self.timeline_muxer.set_events_file(events_file)
         
         # Finalize recording
         recording_path = self.timeline_muxer.finalize()

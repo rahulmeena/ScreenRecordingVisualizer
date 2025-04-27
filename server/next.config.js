@@ -4,11 +4,19 @@ const nextConfig = {
   images: {
     domains: ['localhost', 'storage.googleapis.com'],
   },
-  // Increase body size limit for uploads (100MB)
-  api: {
-    bodyParser: {
-      sizeLimit: '100mb',
-    },
+  // Increase response size limit
+  experimental: {
+    serverComponentsExternalPackages: ['bullmq', 'ioredis'],
+    largePageDataBytes: 100 * 1024 * 1024, // 100MB
+  },
+  // Add rewrites for storage access
+  async rewrites() {
+    return [
+      {
+        source: '/storage/:path*',
+        destination: '/api/storage/:path*',
+      },
+    ];
   },
 };
 

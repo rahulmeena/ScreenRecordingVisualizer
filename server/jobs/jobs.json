@@ -1,0 +1,86 @@
+[
+  {
+    "id": "d30b8ebf-1503-4a5a-a21e-a7c5c75a84a4",
+    "jobId": "job_1745775243827_stufewt",
+    "status": "completed",
+    "data": {
+      "id": "d30b8ebf-1503-4a5a-a21e-a7c5c75a84a4",
+      "filePath": "D:\\GeneralAgents\\server\\uploads\\d30b8ebf-1503-4a5a-a21e-a7c5c75a84a4\\recording_1745775230.zip",
+      "meta": {
+        "machine": "DESKTOP-NJEJFJ8",
+        "os": "Windows 10",
+        "timestamp": 1745775243827,
+        "id": "d30b8ebf-1503-4a5a-a21e-a7c5c75a84a4"
+      }
+    },
+    "timestamp": 1745775243828,
+    "completedAt": 1745775244021,
+    "result": {
+      "processed": true,
+      "timestamp": 1745775244021
+    }
+  },
+  {
+    "id": "b39d1825-f8f3-419a-99be-b5f65c0c851e",
+    "jobId": "job_1745775290664_l3txu94",
+    "status": "completed",
+    "data": {
+      "id": "b39d1825-f8f3-419a-99be-b5f65c0c851e",
+      "filePath": "D:\\GeneralAgents\\server\\uploads\\b39d1825-f8f3-419a-99be-b5f65c0c851e\\recording_1745775276.zip",
+      "meta": {
+        "machine": "DESKTOP-NJEJFJ8",
+        "os": "Windows 10",
+        "timestamp": 1745775290664,
+        "id": "b39d1825-f8f3-419a-99be-b5f65c0c851e"
+      }
+    },
+    "timestamp": 1745775290664,
+    "completedAt": 1745775290842,
+    "result": {
+      "processed": true,
+      "timestamp": 1745775290842
+    }
+  },
+  {
+    "id": "1e00bded-855c-4464-8408-4eb7533811bf",
+    "jobId": "job_1745775318799_3ln944l",
+    "status": "completed",
+    "data": {
+      "id": "1e00bded-855c-4464-8408-4eb7533811bf",
+      "filePath": "D:\\GeneralAgents\\server\\uploads\\1e00bded-855c-4464-8408-4eb7533811bf\\recording_1745775307.zip",
+      "meta": {
+        "machine": "DESKTOP-NJEJFJ8",
+        "os": "Windows 10",
+        "timestamp": 1745775318797,
+        "id": "1e00bded-855c-4464-8408-4eb7533811bf"
+      }
+    },
+    "timestamp": 1745775318799,
+    "completedAt": 1745775319000,
+    "result": {
+      "processed": true,
+      "timestamp": 1745775319000
+    }
+  },
+  {
+    "id": "d87b39f0-9a4b-4632-93f7-80b5d5fb70eb",
+    "jobId": "job_1745775466933_96l26qe",
+    "status": "completed",
+    "data": {
+      "id": "d87b39f0-9a4b-4632-93f7-80b5d5fb70eb",
+      "filePath": "D:\\GeneralAgents\\server\\uploads\\d87b39f0-9a4b-4632-93f7-80b5d5fb70eb\\recording_1745775445.zip",
+      "meta": {
+        "machine": "DESKTOP-NJEJFJ8",
+        "os": "Windows 10",
+        "timestamp": 1745775466932,
+        "id": "d87b39f0-9a4b-4632-93f7-80b5d5fb70eb"
+      }
+    },
+    "timestamp": 1745775466933,
+    "completedAt": 1745775467143,
+    "result": {
+      "processed": true,
+      "timestamp": 1745775467144
+    }
+  }
+]

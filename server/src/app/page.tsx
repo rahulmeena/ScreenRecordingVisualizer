@@ -1,6 +1,45 @@
 import Link from 'next/link';
+import { existsSync, readdirSync } from 'fs';
+import { join } from 'path';
+import { getRecordingData } from '@/lib/storage';
 
-export default function Home() {
+async function getRecentRecordings() {
+  try {
+    // Get the storage directory path
+    const storageDir = join(process.cwd(), 'storage');
+    
+    // Check if storage directory exists
+    if (!existsSync(storageDir)) {
+      return [];
+    }
+    
+    // Get all recording directories
+    const recordingIds = readdirSync(storageDir, { withFileTypes: true })
+      .filter(dirent => dirent.isDirectory())
+      .map(dirent => dirent.name);
+    
+    // Get metadata for each recording
+    const recordings = await Promise.all(
+      recordingIds.map(async id => {
+        const data = await getRecordingData(id);
+        return data;
+      })
+    );
+    
+    // Filter out any null values and sort by timestamp (newest first)
+    return recordings
+      .filter(recording => recording !== null)
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, 10); // Only show the 10 most recent
+  } catch (error) {
+    console.error('Error getting recordings:', error);
+    return [];
+  }
+}
+
+export default async function Home() {
+  const recentRecordings = await getRecentRecordings();
+  
   return (
     <div className="max-w-4xl mx-auto">
       <h2 className="text-3xl font-bold mb-6">Welcome to Screen Recording Visualizer</h2>
@@ -25,10 +64,36 @@ export default function Home() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white shadow-md rounded-lg p-6">
           <h3 className="text-xl font-semibold mb-4">Recent Recordings</h3>
-          <p className="text-gray-500 italic">No recordings available yet.</p>
-          <p className="mt-4">
-            To create recordings, use the Windows desktop application.
-          </p>
+          
+          {recentRecordings.length > 0 ? (
+            <ul className="divide-y">
+              {recentRecordings.map(recording => (
+                <li key={recording.id} className="py-3">
+                  <Link 
+                    href={`/recordings/${recording.id}`}
+                    className="block hover:bg-gray-50 -m-2 p-2 rounded"
+                  >
+                    <div className="font-medium mb-1">
+                      {new Date(recording.timestamp).toLocaleString()}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      ID: {recording.id.substring(0, 8)}...
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      Machine: {recording.machine || 'Unknown'}
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <>
+              <p className="text-gray-500 italic">No recordings available yet.</p>
+              <p className="mt-4">
+                To create recordings, use the Windows desktop application.
+              </p>
+            </>
+          )}
         </div>
         
         <div className="bg-white shadow-md rounded-lg p-6">
