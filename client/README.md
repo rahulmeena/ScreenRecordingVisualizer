@@ -4,7 +4,7 @@ A Windows application that records screen, mouse, and keyboard activity and uplo
 
 ## Features
 
-- Records screen at 1280x800 @ 10fps
+- Records screen at Desktop's resolution @ 10fps
 - Captures mouse movements, clicks, drags, and scrolls
 - Logs keyboard input
 - Runs in the background with minimal resource usage
