@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
-import { mkdir } from 'fs/promises';
+import { writeFile, readFile } from 'fs/promises';
+import { mkdir, readdir } from 'fs/promises';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 import formidable from 'formidable';
-import { createReadStream, writeFileSync } from 'fs';
+import { createReadStream, writeFileSync, existsSync } from 'fs';
 import { enqueueProcessJob } from '@/lib/queue';
+import { getRecordingData } from '@/lib/storage';
 
 // This config is not needed in App Router and should be removed
 // export const config = {
@@ -13,6 +14,46 @@ import { enqueueProcessJob } from '@/lib/queue';
 //     bodyParser: false,
 //   },
 // };
+
+export async function GET() {
+  try {
+    // Get the storage directory path
+    const storageDir = join(process.cwd(), 'storage');
+    
+    // Check if storage directory exists
+    if (!existsSync(storageDir)) {
+      return NextResponse.json([]);
+    }
+    
+    // Get all recording directories
+    const recordingIds = await readdir(storageDir, { withFileTypes: true })
+      .then(dirents => dirents
+        .filter(dirent => dirent.isDirectory())
+        .map(dirent => dirent.name)
+      );
+    
+    // Get metadata for each recording
+    const recordings = await Promise.all(
+      recordingIds.map(async id => {
+        const data = await getRecordingData(id);
+        return data;
+      })
+    );
+    
+    // Filter out any null values and sort by timestamp (newest first)
+    const filteredRecordings = recordings
+      .filter(recording => recording !== null)
+      .sort((a, b) => b.timestamp - a.timestamp);
+    
+    return NextResponse.json(filteredRecordings);
+  } catch (error) {
+    console.error('Error getting recordings:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {

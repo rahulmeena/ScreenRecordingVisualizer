@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import Image from 'next/image';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -17,13 +18,20 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <div className="min-h-screen bg-gray-50">
-          <header className="bg-primary-600 text-white p-4 shadow-md">
-            <div className="container mx-auto">
-              <h1 className="text-2xl font-bold">Screen Recording Visualizer</h1>
+        <div className="min-h-screen bg-dark-300">
+          <header className="bg-dark-100 text-white p-4 shadow-md border-b border-primary-700/30">
+            <div className="w-full px-4">
+              <Image 
+                src="/wordmark.svg" 
+                alt="GeneralAgents Logo" 
+                width={200} 
+                height={30} 
+                priority
+                className="h-8 w-auto invert brightness-200 filter"
+              />
             </div>
           </header>
-          <main className="container mx-auto py-6 px-4">{children}</main>
+          <main className="w-full px-4 py-6">{children}</main>
         </div>
       </body>
     </html>

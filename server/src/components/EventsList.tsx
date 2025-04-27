@@ -81,57 +81,57 @@ export default function EventsList({ eventsUrl }: EventsListProps) {
     switch (event.kind) {
       case 'mouse_down':
       case 'mouse_up':
-        return 'bg-red-100 border-red-300';
+        return 'bg-red-900/30 border-red-700/50 text-red-200';
       case 'key_down':
       case 'key_up':
-        return 'bg-blue-100 border-blue-300';
+        return 'bg-blue-900/30 border-blue-700/50 text-blue-200';
       case 'drag_end':
-        return 'bg-green-100 border-green-300';
+        return 'bg-green-900/30 border-green-700/50 text-green-200';
       case 'scroll':
-        return 'bg-purple-100 border-purple-300';
+        return 'bg-purple-900/30 border-purple-700/50 text-purple-200';
       default:
-        return 'bg-gray-100 border-gray-300';
+        return 'bg-gray-800 border-gray-700 text-gray-300';
     }
   };
   
   if (loading) {
-    return <div className="p-4 text-center">Loading events...</div>;
+    return <div className="p-4 text-center text-gray-300">Loading events...</div>;
   }
   
   if (events.length === 0) {
-    return <div className="p-4 text-center">No events found</div>;
+    return <div className="p-4 text-center text-gray-300">No events found</div>;
   }
   
   return (
     <div>
       <div className="flex gap-2 mb-4">
         <button
-          className={`px-2 py-1 text-xs rounded ${
-            filter === 'all' ? 'bg-primary-600 text-white' : 'bg-gray-200'
+          className={`px-2 py-1 text-xs rounded transition-colors ${
+            filter === 'all' ? 'bg-primary-600 text-white' : 'bg-dark-200 text-gray-300 hover:bg-dark-100'
           }`}
           onClick={() => setFilter('all')}
         >
           All
         </button>
         <button
-          className={`px-2 py-1 text-xs rounded ${
-            filter === 'mouse' ? 'bg-primary-600 text-white' : 'bg-gray-200'
+          className={`px-2 py-1 text-xs rounded transition-colors ${
+            filter === 'mouse' ? 'bg-primary-600 text-white' : 'bg-dark-200 text-gray-300 hover:bg-dark-100'
           }`}
           onClick={() => setFilter('mouse')}
         >
           Mouse
         </button>
         <button
-          className={`px-2 py-1 text-xs rounded ${
-            filter === 'keyboard' ? 'bg-primary-600 text-white' : 'bg-gray-200'
+          className={`px-2 py-1 text-xs rounded transition-colors ${
+            filter === 'keyboard' ? 'bg-primary-600 text-white' : 'bg-dark-200 text-gray-300 hover:bg-dark-100'
           }`}
           onClick={() => setFilter('keyboard')}
         >
           Keyboard
         </button>
         <button
-          className={`px-2 py-1 text-xs rounded ${
-            filter === 'scroll' ? 'bg-primary-600 text-white' : 'bg-gray-200'
+          className={`px-2 py-1 text-xs rounded transition-colors ${
+            filter === 'scroll' ? 'bg-primary-600 text-white' : 'bg-dark-200 text-gray-300 hover:bg-dark-100'
           }`}
           onClick={() => setFilter('scroll')}
         >
@@ -139,7 +139,7 @@ export default function EventsList({ eventsUrl }: EventsListProps) {
         </button>
       </div>
       
-      <div className="max-h-[600px] overflow-y-auto">
+      <div className="max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-dark-200">
         {filteredEvents.map((event, index) => (
           <div 
             key={index}

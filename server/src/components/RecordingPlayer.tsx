@@ -57,7 +57,7 @@ export default function RecordingPlayer({ videoUrl, eventsUrl, id }: RecordingPl
   });
   
   return (
-    <div className="bg-white shadow-md rounded-lg p-4">
+    <div className="bg-dark-100 shadow-lg rounded-lg p-4 border border-primary-700/20">
       <div className="relative" ref={containerRef}>
         <ReactPlayer
           ref={playerRef}
@@ -88,7 +88,7 @@ export default function RecordingPlayer({ videoUrl, eventsUrl, id }: RecordingPl
       </div>
       
       <div className="mt-4">
-        <div className="flex justify-between text-sm text-gray-600 mb-1">
+        <div className="flex justify-between text-sm text-gray-400 mb-1">
           <div>
             {new Date(currentTime * 1000).toISOString().substr(11, 8)}
           </div>
@@ -97,9 +97,9 @@ export default function RecordingPlayer({ videoUrl, eventsUrl, id }: RecordingPl
           </div>
         </div>
         
-        <div className="h-4 bg-gray-200 rounded overflow-hidden">
+        <div className="h-4 bg-dark-200 rounded overflow-hidden">
           <div
-            className="h-full bg-primary-500"
+            className="h-full bg-primary-600"
             style={{
               width: duration > 0 ? `${(currentTime / duration) * 100}%` : '0%',
             }}
@@ -108,7 +108,7 @@ export default function RecordingPlayer({ videoUrl, eventsUrl, id }: RecordingPl
         
         <div className="mt-4 flex gap-4">
           <button
-            className="px-3 py-1 bg-primary-500 text-white rounded"
+            className="px-3 py-1 bg-primary-700 text-white rounded hover:bg-primary-600 transition-colors"
             onClick={() => {
               if (playerRef.current) {
                 playerRef.current.seekTo(Math.max(0, currentTime - 5));
@@ -119,14 +119,14 @@ export default function RecordingPlayer({ videoUrl, eventsUrl, id }: RecordingPl
           </button>
           
           <button
-            className="px-3 py-1 bg-primary-500 text-white rounded"
+            className="px-3 py-1 bg-primary-700 text-white rounded hover:bg-primary-600 transition-colors"
             onClick={() => setPlaying(!playing)}
           >
             {playing ? 'Pause' : 'Play'}
           </button>
           
           <button
-            className="px-3 py-1 bg-primary-500 text-white rounded"
+            className="px-3 py-1 bg-primary-700 text-white rounded hover:bg-primary-600 transition-colors"
             onClick={() => {
               if (playerRef.current) {
                 playerRef.current.seekTo(Math.min(duration, currentTime + 5));
