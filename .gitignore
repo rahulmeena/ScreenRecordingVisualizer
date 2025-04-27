@@ -8,6 +8,7 @@ yarn-error.log*
 
 # Next.js build and development artifacts
 .next/
+*/.next/
 out/
 server/next-env.d.ts
 server/tsconfig.json
@@ -15,6 +16,7 @@ server/tsconfig.json
 
 # Python environments and bytecode
 venv/
+*/venv/
 __pycache__/
 *.py[cod]
 *$py.class
@@ -64,3 +66,8 @@ temp/
 
 node_modules/
 */node_modules/
+
+# Build files
+dist/
+build/
+*.exe
