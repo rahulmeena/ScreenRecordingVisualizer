@@ -22,6 +22,13 @@ export default function ActionOverlay({
   const observerRef = useRef<ResizeObserver | null>(null);
   const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
   
+  // State for tracking keyboard inputs
+  const [keyBuffer, setKeyBuffer] = useState<{text: string, lastKeyTime: number, firstKeyTime: number}>({
+    text: '',
+    lastKeyTime: 0,
+    firstKeyTime: 0
+  });
+  
   // Set up resize observer to update canvas size when container changes
   useEffect(() => {
     if (!containerRef.current) return;
@@ -48,6 +55,148 @@ export default function ActionOverlay({
       }
     };
   }, [containerRef]);
+  
+  // Process keyboard events and update buffer
+  useEffect(() => {
+    // Extract only key_down events
+    // Only apply a delay at the very beginning of the video (first ~1 second)
+    const initialVideoDelay = 0.6; // 600ms startup delay
+    const startupPeriod = 1.0; // Only apply delay during first second of video
+
+    const keyEvents = events.filter(event => {
+      if (event.kind === 'key_down') {
+        const eventTimeSeconds = event.t / 1000;
+        
+        // If we're in the startup period and this is an early event,
+        // apply the delay to compensate for browser rendering
+        if (currentTime <= startupPeriod && eventTimeSeconds <= startupPeriod) {
+          return eventTimeSeconds <= currentTime - initialVideoDelay;
+        }
+        
+        // Otherwise show keys immediately
+        return event.kind === 'key_down';
+      }
+      return false;
+    });
+    
+    if (keyEvents.length === 0) {
+      // If there are no key events in the current frame, check if we need to clear the buffer
+      const inactivityThreshold = 0.8; // seconds
+      if (keyBuffer.text && currentTime - keyBuffer.lastKeyTime > inactivityThreshold) {
+        // Clear the buffer after the inactivity threshold
+        setKeyBuffer({
+          text: '',
+          lastKeyTime: 0,
+          firstKeyTime: 0
+        });
+      }
+      return;
+    }
+    
+    // Get the latest keyboard event
+    const latestKeyEvent = keyEvents[keyEvents.length - 1];
+    const eventTimeSeconds = latestKeyEvent.t / 1000;
+    
+    // Determine the key to display
+    let keyText = latestKeyEvent.key;
+    
+    // Format special keys more nicely
+    if (keyText === 'space') {
+      keyText = ' ';
+    } else if (keyText === 'backspace') {
+      // Handle backspace by removing the last character
+      setKeyBuffer(prev => ({
+        text: prev.text.slice(0, -1),
+        lastKeyTime: eventTimeSeconds,
+        firstKeyTime: prev.firstKeyTime || eventTimeSeconds
+      }));
+      return;
+    } else if (keyText === 'enter') {
+      keyText = '↵';  // Use arrow symbol for Enter
+    } else if (keyText === 'alt' || keyText === 'alt_l' || keyText === 'alt_r') {
+      keyText = 'Alt';
+    } else if (keyText === 'shift' || keyText === 'shift_l' || keyText === 'shift_r') {
+      keyText = 'Shift';
+    } else if (keyText === 'ctrl' || keyText === 'ctrl_l' || keyText === 'ctrl_r') {
+      keyText = 'Ctrl';
+    } else if (keyText === 'tab') {
+      keyText = 'Tab';
+    } else if (keyText === 'escape') {
+      keyText = 'Esc';
+    }
+    
+    // Handle key repeat protection - relaxed to avoid missing characters
+    // Now we only detect repeats if the same key is pressed within 40ms (0.04 seconds)
+    const lastKeyInBuffer = getLastKeyFromBuffer(keyBuffer.text);
+    
+    if (keyText === lastKeyInBuffer && eventTimeSeconds - keyBuffer.lastKeyTime < 0.04) {
+      // This is likely a true key repeat (OS generated), not a human pressing the same key twice
+      // Update the timestamp but don't add another character
+      setKeyBuffer(prev => ({
+        ...prev,
+        lastKeyTime: eventTimeSeconds
+      }));
+      return;
+    }
+    
+    // Max time between keystrokes to be considered part of the same sequence
+    const sequenceThreshold = 0.5; // seconds
+    
+    // Handle spacing for special keys
+    let textToAdd = keyText;
+    
+    // If it's a special key, ensure proper spacing
+    if (isSpecialKey(keyText)) {
+      // If buffer is not empty and doesn't end with a space, add a space before the special key
+      if (keyBuffer.text && !keyBuffer.text.endsWith(' ')) {
+        textToAdd = ' ' + keyText;
+      }
+      
+      // Always add a space after special keys (except at the very beginning of input)
+      if (keyBuffer.text.length > 0 || textToAdd !== keyText) {
+        textToAdd = textToAdd + ' ';
+      }
+    }
+    
+    if (keyBuffer.text && eventTimeSeconds - keyBuffer.lastKeyTime > sequenceThreshold) {
+      // This is a new sequence, reset the buffer
+      setKeyBuffer({
+        text: keyText,
+        lastKeyTime: eventTimeSeconds,
+        firstKeyTime: eventTimeSeconds
+      });
+    } else {
+      // Add to existing sequence
+      setKeyBuffer(prev => ({
+        text: prev.text + textToAdd,
+        lastKeyTime: eventTimeSeconds,
+        firstKeyTime: prev.firstKeyTime || eventTimeSeconds
+      }));
+    }
+  }, [events, currentTime]);
+  
+  // Helper to determine if a key is a special key that should be separated with a space
+  function isSpecialKey(key: string): boolean {
+    const specialKeys = ['↵', 'Alt', 'Shift', 'Ctrl', 'Tab', 'Esc'];
+    return specialKeys.includes(key);
+  }
+  
+  // Helper to get the last key from the buffer (accounting for special keys that might have spaces)
+  function getLastKeyFromBuffer(text: string): string {
+    if (!text) return '';
+    
+    const specialKeys = ['↵', 'Alt', 'Shift', 'Ctrl', 'Tab', 'Esc'];
+    
+    // Check if the buffer ends with any of the special keys
+    for (const key of specialKeys) {
+      if (text.endsWith(key) || text.endsWith(` ${key}`)) {
+        return key;
+      }
+    }
+    
+    // Otherwise, return the last character
+    return text.charAt(text.length - 1);
+  }
   
   // Draw events on canvas
   useEffect(() => {
@@ -175,8 +324,41 @@ export default function ActionOverlay({
       drawLegend(ctx, canvas.width, overlayScaleFactor);
     }
     
-    // Draw events
-    events.forEach(event => {
+    // Check if we have text in the key buffer
+    if (keyBuffer.text) {
+      // Calculate the animation progress for the text
+      const timeSinceFirstKey = currentTime - keyBuffer.firstKeyTime;
+      const timeSinceLastKey = currentTime - keyBuffer.lastKeyTime;
+      
+      // Keep the text visible for at least 1.5 seconds after the last key press
+      const visibilityDuration = 1.5; // seconds
+      
+      if (timeSinceLastKey < visibilityDuration) {
+        // Opacity based on time since last key
+        const opacity = Math.max(0, 1 - (timeSinceLastKey / visibilityDuration));
+        drawKeySequence(ctx, keyBuffer.text, opacity, overlayScaleFactor);
+      }
+    }
+    
+    // Apply display delay only at the beginning of the video
+    const initialVideoDelay = 0.6; // 600ms startup delay
+    const startupPeriod = 1.0; // Only apply delay during first second of video
+    
+    // Filter events to only show those that should be visible (with delay only at start)
+    const delayedEvents = events.filter(event => {
+      const eventTimeSeconds = event.t / 1000;
+      
+      // If we're in the startup period and this is an early event, apply the delay
+      if (currentTime <= startupPeriod && eventTimeSeconds <= startupPeriod) {
+        return eventTimeSeconds <= currentTime - initialVideoDelay;
+      }
+      
+      // Otherwise show events immediately
+      return true;
+    });
+    
+    // Draw individual events (with delay applied)
+    delayedEvents.forEach(event => {
       // Calculate animation progress (0 to 1) - events are visible for 1 second
       const eventTimeSeconds = event.t / 1000;
       const timeSinceEvent = currentTime - eventTimeSeconds;
@@ -195,7 +377,19 @@ export default function ActionOverlay({
           break;
         
         case 'key_down':
-          drawKeyPress(ctx, event.key, animationProgress, overlayScaleFactor);
+          // Only show special keys individually when there's no active key buffer
+          // We now handle all special keys in the key buffer, no need to show them separately
+          if ((!keyBuffer.text || currentTime - keyBuffer.lastKeyTime > 0.8)) {
+            // Only show keys that we haven't added special handling for in the key buffer
+            const key = event.key;
+            const handledSpecialKeys = ['enter', 'space', 'backspace', 'alt', 'alt_l', 'alt_r', 
+                                       'shift', 'shift_l', 'shift_r', 'ctrl', 'ctrl_l', 'ctrl_r',
+                                       'tab', 'escape'];
+            
+            if (!handledSpecialKeys.includes(key)) {
+              drawKeyPress(ctx, event.key, animationProgress, overlayScaleFactor);
+            }
+          }
           break;
         
         case 'drag_end':
@@ -226,7 +420,7 @@ export default function ActionOverlay({
           break;
       }
     });
-  }, [events, containerRef, currentTime, showLegend, sourceResolution, debugMode, canvasSize]);
+  }, [events, containerRef, currentTime, showLegend, sourceResolution, debugMode, canvasSize, keyBuffer]);
   
   // Draw a mouse click with animation
   function drawClick(
@@ -307,6 +501,47 @@ export default function ActionOverlay({
     ctx.fillText(text, x, y);
   }
   
+  // Draw a sequence of keys as a sentence
+  function drawKeySequence(ctx: CanvasRenderingContext2D, text: string, opacity: number, scale: number) {
+    const x = ctx.canvas.width / 2;
+    const y = ctx.canvas.height - 80 * scale; // Same position as individual keys
+    
+    const fontSize = 22 * scale; // Slightly larger for better readability
+    ctx.font = `bold ${fontSize}px sans-serif`;
+    const textWidth = ctx.measureText(text).width;
+    
+    // Background with rounded corners
+    const bgWidth = textWidth + 50 * scale; // More padding
+    const bgHeight = fontSize + 24 * scale; // More height
+    const radius = 12 * scale; // More rounded corners
+    
+    // Darker, more opaque background
+    ctx.fillStyle = `rgba(0, 0, 0, ${Math.min(0.95, opacity * 0.95)})`;
+    ctx.beginPath();
+    ctx.moveTo(x - bgWidth/2 + radius, y - bgHeight/2);
+    ctx.lineTo(x + bgWidth/2 - radius, y - bgHeight/2);
+    ctx.quadraticCurveTo(x + bgWidth/2, y - bgHeight/2, x + bgWidth/2, y - bgHeight/2 + radius);
+    ctx.lineTo(x + bgWidth/2, y + bgHeight/2 - radius);
+    ctx.quadraticCurveTo(x + bgWidth/2, y + bgHeight/2, x + bgWidth/2 - radius, y + bgHeight/2);
+    ctx.lineTo(x - bgWidth/2 + radius, y + bgHeight/2);
+    ctx.quadraticCurveTo(x - bgWidth/2, y + bgHeight/2, x - bgWidth/2, y + bgHeight/2 - radius);
+    ctx.lineTo(x - bgWidth/2, y - bgHeight/2 + radius);
+    ctx.quadraticCurveTo(x - bgWidth/2, y - bgHeight/2, x - bgWidth/2 + radius, y - bgHeight/2);
+    ctx.closePath();
+    ctx.fill();
+    
+    // Add a subtle border
+    ctx.strokeStyle = `rgba(70, 130, 180, ${Math.min(0.9, opacity * 0.9)})`;
+    ctx.lineWidth = 2 * scale;
+    ctx.stroke();
+    
+    // Draw text with sharper white color
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1.0, opacity * 1.2)})`;
+    ctx.fillText(text, x, y);
+  }
+  
   // Draw a drag operation with animation
   function drawDrag(
     ctx: CanvasRenderingContext2D, 
@@ -319,55 +554,38 @@ export default function ActionOverlay({
   ) {
     if (progress <= 0) return;
     
+    // Fade the entire arrow based on progress, but always show full length
     const opacity = Math.max(0.2, progress);
     const color = `rgba(0, 200, 0, ${opacity * 0.8})`;
     
-    // Calculate the animated end point
-    const animatedEndX = startX + (endX - startX) * progress;
-    const animatedEndY = startY + (endY - startY) * progress;
-    
-    // Draw start point
-    ctx.beginPath();
-    ctx.arc(startX, startY, 10 * scale, 0, 2 * Math.PI); // Increased from 8
-    ctx.fillStyle = color;
-    ctx.fill();
+    // Always show the full arrow (no growing animation)
+    // Use the actual end points rather than animated ones
     
     // Draw path line
     ctx.beginPath();
     ctx.moveTo(startX, startY);
-    ctx.lineTo(animatedEndX, animatedEndY);
+    ctx.lineTo(endX, endY);
     ctx.strokeStyle = color;
-    ctx.lineWidth = 5 * scale; // Increased from 4
+    ctx.lineWidth = 3 * scale; // Thinner line
     ctx.stroke();
     
-    // Draw end point
+    // Draw arrow head
+    const angle = Math.atan2(endY - startY, endX - startX);
+    const length = 14 * scale; // Smaller arrow head
+    
     ctx.beginPath();
-    ctx.arc(animatedEndX, animatedEndY, 15 * scale, 0, 2 * Math.PI); // Increased from 12
+    ctx.moveTo(endX, endY);
+    ctx.lineTo(
+      endX - length * Math.cos(angle - Math.PI / 6),
+      endY - length * Math.sin(angle - Math.PI / 6)
+    );
+    ctx.lineTo(
+      endX - length * Math.cos(angle + Math.PI / 6),
+      endY - length * Math.sin(angle + Math.PI / 6)
+    );
+    ctx.closePath();
     ctx.fillStyle = color;
     ctx.fill();
-    
-    // Draw arrow head if we're at least 50% through the drag
-    if (progress >= 0.5) {
-      const angle = Math.atan2(endY - startY, endX - startX);
-      const length = 18 * scale; // Increased from 15
-      
-      ctx.beginPath();
-      ctx.moveTo(animatedEndX, animatedEndY);
-      ctx.lineTo(
-        animatedEndX - length * Math.cos(angle - Math.PI / 6),
-        animatedEndY - length * Math.sin(angle - Math.PI / 6)
-      );
-      ctx.lineTo(
-        animatedEndX - length * Math.cos(angle + Math.PI / 6),
-        animatedEndY - length * Math.sin(angle + Math.PI / 6)
-      );
-      ctx.closePath();
-      ctx.fillStyle = color;
-      ctx.fill();
-      
-      // Add "Drag" label near the end point
-      drawLabel(ctx, animatedEndX, animatedEndY + 35 * scale, "Drag", color, scale); // Increased offset
-    }
   }
   
   // Draw scroll action with animation

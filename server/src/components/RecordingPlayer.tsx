@@ -55,6 +55,11 @@ export default function RecordingPlayer({ videoUrl, eventsUrl, id, showSidePanel
   const containerRef = useRef<HTMLDivElement>(null);
   const [debugMode, setDebugMode] = useState(false);
   
+  // Global overlay delay (seconds)
+  const overlayDelay = 1.5;
+  // Effective time for overlay (video runs ahead)
+  const overlayTime = Math.max(0, currentTime - overlayDelay);
+  
   // Fetch events data
   useEffect(() => {
     async function loadEventData() {
@@ -90,10 +95,10 @@ export default function RecordingPlayer({ videoUrl, eventsUrl, id, showSidePanel
   
   // Filter events that are visible at the current time
   const visibleEvents = events.filter(event => {
-    // Convert from ms to seconds for comparison with video playback time
+    // Convert from ms to seconds for comparison with overlay playback time
     const eventTimeSeconds = event.t / 1000;
-    // Events are visible if they happened within 1 second of the current time
-    return eventTimeSeconds <= currentTime && eventTimeSeconds > currentTime - 1;
+    // Events are visible if they happened within 1 second of the overlay time
+    return eventTimeSeconds <= overlayTime && eventTimeSeconds > overlayTime - 1;
   });
   
   // Handle seeking to a specific time when clicking on an event
@@ -137,7 +142,7 @@ export default function RecordingPlayer({ videoUrl, eventsUrl, id, showSidePanel
             <ActionOverlay
               events={visibleEvents}
               containerRef={containerRef}
-              currentTime={currentTime}
+              currentTime={overlayTime}
               sourceResolution={sourceResolution}
               debugMode={debugMode}
             />
