@@ -33,7 +33,6 @@ See [server/README.md](server/README.md) for more details.
 - Windows 10 or 11 (64-bit) for client
 - Python 3.8+ for client development
 - Node.js 18+ for server
-- Redis for server job queue
 - FFmpeg (included in both components)
 
 ### Quick Start
@@ -44,10 +43,8 @@ See [server/README.md](server/README.md) for more details.
    npm install
    npm run dev
    ```
-   In a separate terminal:
-   ```
-   npm run worker
-   ```
+   
+   The server includes a simplified queue system that works without Redis.
 
 2. **Build and run the client**:
    ```
@@ -61,12 +58,36 @@ See [server/README.md](server/README.md) for more details.
 ## Architecture
 
 ```
-+----------------------+        HTTPS (multipart/form)        +----------------------------+
-|  Windows Tray App    |  ───────────────────────────────────▶ |  Upload API (Node/Next.js) |
-|  (Python 3.12)       |                                       +----------------------------+
-|                      |                                               │
-|  ▸ ScreenCapture     |           Synchronized  ⎫                    │ enqueue job
-|  ▸ InputLogger       |           MP4  (H.264)  ⎬  ─┐                 ▼
++----------------------+        HTTPS (binary upload)      +----------------------------+
+|  Windows Tray App    |  ───────────────────────────────▶ |  Upload API (Node/Next.js) |
+|  (Python 3.12)       |                                   +----------------------------+
+|                      |                                           │
+|  ▸ ScreenCapture     |           Synchronized  ⎫                │ process in-app
+|  ▸ InputLogger       |           MP4  (H.264)  ⎬  ──────────────┘
+|  ▸ TimelineMuxer     |           events.json    ⎭   
+|  ▸ Uploader          |                              
++----------------------+                              
+                                                  
+                                     REST / SWR            
+                                 +-------------------------------+
+                                 |  Next.js  Web UI (Tailwind)   |
+                                 |  • video player (react-player)|
+                                 |  • canvas action overlay      |
+                                 |  • sortable event table       |
+                                 +-------------------------------+
+```
+
+### Future Architecture
+
+In future releases, the system will use Redis and dedicated workers for improved scalability:
+
+```
++----------------------+        HTTPS (binary upload)      +----------------------------+
+|  Windows Tray App    |  ───────────────────────────────▶ |  Upload API (Node/Next.js) |
+|  (Python 3.12)       |                                   +----------------------------+
+|                      |                                           │
+|  ▸ ScreenCapture     |           Synchronized  ⎫                │ enqueue job (Redis)
+|  ▸ InputLogger       |           MP4  (H.264)  ⎬  ─┐             ▼
 |  ▸ TimelineMuxer     |           events.json    ⎭   ├▶  S3 / Blob store
 |  ▸ Uploader          |                              │
 +----------------------+                              ▼
@@ -91,7 +112,8 @@ This solution is designed to be lightweight:
 - Client uses ~50MB RAM when idle, ~15% CPU during recording
 - Zero-copy screen capture minimizes resource usage
 - Hardware-accelerated encoding when available
-- Server worker processes recordings asynchronously
+- Simplified queue processes recordings synchronously in the current version
+- Future releases will support asynchronous processing with dedicated workers
 
 ## License
 
