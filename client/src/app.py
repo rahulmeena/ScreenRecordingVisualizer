@@ -123,6 +123,11 @@ class RecorderApp:
         video_file = self.screen_capture.stop()
         events_file = self.input_logger.stop()
         
+        # Ensure TimelineMuxer uses the same resolution as ScreenCapture
+        resolution = self.screen_capture.resolution
+        logger.info(f"Using resolution from ScreenCapture: {resolution[0]}x{resolution[1]}")
+        self.timeline_muxer.set_resolution(resolution)
+        
         # Set files in timeline muxer
         self.timeline_muxer.set_video_file(video_file)
         self.timeline_muxer.set_events_file(events_file)

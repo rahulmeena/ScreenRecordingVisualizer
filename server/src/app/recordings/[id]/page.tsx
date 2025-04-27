@@ -1,7 +1,6 @@
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import RecordingPlayer from '@/components/RecordingPlayer';
-import EventsList from '@/components/EventsList';
 import { getRecordingData } from '@/lib/storage';
 
 // Generate metadata for the page
@@ -31,7 +30,7 @@ export default async function RecordingPage({ params }: { params: { id: string }
   }
   
   return (
-    <div className="w-full">
+    <div className="w-full max-w-screen-2xl mx-auto">
       <h2 className="text-2xl font-bold mb-4 text-white">Recording {id}</h2>
       
       <div className="bg-dark-100 shadow-lg rounded-lg p-4 mb-6 border border-primary-700/20 text-gray-300">
@@ -53,26 +52,13 @@ export default async function RecordingPage({ params }: { params: { id: string }
         </div>
       </div>
       
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-        <div className="xl:col-span-3">
-          <Suspense fallback={<div className="text-gray-300">Loading player...</div>}>
-            <RecordingPlayer
-              videoUrl={recordingData.urls.video}
-              eventsUrl={recordingData.urls.events}
-              id={id}
-            />
-          </Suspense>
-        </div>
-        
-        <div>
-          <h3 className="text-lg font-medium mb-3 text-white">Events Timeline</h3>
-          <div className="bg-dark-100 shadow-lg rounded-lg p-4 border border-primary-700/20">
-            <Suspense fallback={<div className="text-gray-300">Loading events...</div>}>
-              <EventsList eventsUrl={recordingData.urls.events} />
-            </Suspense>
-          </div>
-        </div>
-      </div>
+      <Suspense fallback={<div className="text-gray-300">Loading player...</div>}>
+        <RecordingPlayer
+          videoUrl={recordingData.urls.video}
+          eventsUrl={recordingData.urls.events}
+          id={id}
+        />
+      </Suspense>
     </div>
   );
 } 

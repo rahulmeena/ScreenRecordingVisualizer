@@ -3,7 +3,6 @@
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import RecordingPlayer from '@/components/RecordingPlayer';
-import EventsList from '@/components/EventsList';
 
 interface Recording {
   id: string;
@@ -120,12 +119,12 @@ export default function Home() {
             </div>
           )}
           
-          <div className="grid grid-cols-1 lg:grid-cols-24 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             {/* Left column - Recordings List */}
-            <div className="lg:col-span-5">
-              <div className="bg-dark-100 shadow-lg rounded-lg p-4 border border-primary-700/20 h-full">
+            <div className="lg:col-span-3">
+              <div className="bg-dark-100 shadow-lg rounded-lg p-4 border border-primary-700/20 overflow-hidden" style={{ height: '600px' }}>
                 <h3 className="text-lg font-medium mb-3 text-white">Available Recordings</h3>
-                <ul className="divide-y divide-gray-800">
+                <ul className="divide-y divide-gray-800 h-full overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-dark-200" style={{ overscrollBehavior: 'contain' }}>
                   {recordings.map(recording => (
                     <li 
                       key={recording?.id || 'unknown'} 
@@ -147,8 +146,8 @@ export default function Home() {
               </div>
             </div>
             
-            {/* Middle column - Video Player */}
-            <div className="lg:col-span-14">
+            {/* Right column - Video Player with integrated Events Timeline */}
+            <div className="lg:col-span-9">
               {selectedRecording ? (
                 <RecordingPlayer
                   videoUrl={selectedRecording.urls.video}
@@ -160,20 +159,6 @@ export default function Home() {
                   <p>Select a recording to view</p>
                 </div>
               )}
-            </div>
-            
-            {/* Right column - Events Timeline */}
-            <div className="lg:col-span-5">
-              <h3 className="text-lg font-medium mb-3 text-white">Events Timeline</h3>
-              <div className="bg-dark-100 shadow-lg rounded-lg p-4 border border-primary-700/20 h-full">
-                {selectedRecording ? (
-                  <EventsList eventsUrl={selectedRecording.urls.events} />
-                ) : (
-                  <div className="text-gray-300 text-center py-4">
-                    Select a recording to view events
-                  </div>
-                )}
-              </div>
             </div>
           </div>
         </>

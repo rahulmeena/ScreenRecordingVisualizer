@@ -5,6 +5,7 @@ import shutil
 import tempfile
 import zipfile
 from loguru import logger
+import mss  # Import mss to get screen resolution
 
 class TimelineMuxer:
     def __init__(self):
@@ -15,6 +16,13 @@ class TimelineMuxer:
         self.recording_dir = None
         self.video_file = None
         self.events_file = None
+        
+        # Get actual screen resolution
+        with mss.mss() as sct:
+            monitor = sct.monitors[1]  # Primary monitor
+            self.screen_width = monitor["width"]
+            self.screen_height = monitor["height"]
+            logger.info(f"Detected screen resolution for metadata: {self.screen_width}x{self.screen_height}")
     
     def start(self):
         """Start a new recording session"""
@@ -46,6 +54,14 @@ class TimelineMuxer:
         self.events_file = events_path
         logger.info(f"Set events file: {events_path}")
     
+    def set_resolution(self, resolution):
+        """Set the resolution for the recording metadata"""
+        if isinstance(resolution, tuple) and len(resolution) == 2:
+            self.screen_width, self.screen_height = resolution
+            logger.info(f"Resolution updated to: {self.screen_width}x{self.screen_height}")
+        else:
+            logger.error(f"Invalid resolution format: {resolution}")
+    
     def finalize(self):
         """Finalize the recording by combining video and events into a package"""
         if self.running:
@@ -72,7 +88,7 @@ class TimelineMuxer:
             "id": self.recording_id,
             "timestamp": time.time(),
             "duration": self._calculate_duration(),
-            "resolution": [1280, 800],
+            "resolution": [self.screen_width, self.screen_height],
             "fps": 10
         }
         
@@ -133,7 +149,7 @@ class TimelineMuxer:
                 data = json.load(f)
             
             if "events" not in data or not data["events"]:
-                return {"meta": {"fps": 10, "resolution": [1280, 800]}, "events": []}
+                return {"meta": {"fps": 10, "resolution": [self.screen_width, self.screen_height]}, "events": []}
             
             events = data["events"]
             
@@ -148,11 +164,11 @@ class TimelineMuxer:
             return {
                 "meta": {
                     "fps": 10,
-                    "resolution": [1280, 800],
+                    "resolution": [self.screen_width, self.screen_height],
                     "start_time": time.time()
                 },
                 "events": events
             }
         except Exception as e:
             logger.error(f"Error normalizing events: {e}")
-            return {"meta": {"fps": 10, "resolution": [1280, 800]}, "events": []} 
+            return {"meta": {"fps": 10, "resolution": [self.screen_width, self.screen_height]}, "events": []} 
