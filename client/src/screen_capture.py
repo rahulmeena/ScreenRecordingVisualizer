@@ -9,6 +9,7 @@ import mss
 import numpy as np
 from loguru import logger
 import shutil
+from timing import set_start_time
 
 class ScreenCapture:
     def __init__(self, resolution=None, fps=10):
@@ -27,6 +28,8 @@ class ScreenCapture:
         self.frame_queue = Queue(maxsize=2)  # Small queue to minimize memory usage
         self.output_dir = os.path.join(os.environ.get('APPDATA', tempfile.gettempdir()), 'GAce')
         os.makedirs(self.output_dir, exist_ok=True)
+        self.temp_dir = os.path.join(self.output_dir, 'temp')
+        os.makedirs(self.temp_dir, exist_ok=True)
         self.output_file = None
         self.ffmpeg_process = None
         self.capture_thread = None
@@ -36,6 +39,9 @@ class ScreenCapture:
         """Start the screen capture process"""
         if self.running:
             return
+        
+        # Set global start time in the timing module first
+        set_start_time()
         
         self.running = True
         self.output_file = os.path.join(self.output_dir, f"recording_{int(time.time())}.mp4")

@@ -25,34 +25,43 @@ export default function Home() {
   
   // Fetch recordings data
   useEffect(() => {
+    let isMounted = true;
     async function fetchRecordings() {
       try {
-        setLoading(true);
         const response = await fetch('/api/recordings');
         if (!response.ok) {
           throw new Error('Failed to fetch recordings');
         }
         const data = await response.json();
-        
-        // Filter out any invalid recordings (missing id or other required properties)
-        const validRecordings = data.filter(recording => 
-          recording && recording.id && recording.timestamp && recording.urls
-        );
-        
-        setRecordings(validRecordings);
-        
-        // Set the first recording as selected by default if available
-        if (validRecordings.length > 0) {
-          setSelectedRecording(validRecordings[0]);
-        }
-      } catch (error) {
-        console.error('Error fetching recordings:', error);
+        // Sanitize & validate
+        const valid = data.filter((r: any) => r && r.id && r.timestamp && r.urls);
+        if (!isMounted) return;
+        setRecordings(valid);
+        // Preserve previously selected recording if it still exists
+        setSelectedRecording(prev => {
+          if (prev) {
+            const stillExists = valid.find((v: any) => v.id === prev.id);
+            return stillExists || (valid.length > 0 ? valid[0] : null);
+          }
+          return valid.length > 0 ? valid[0] : null;
+        });
+      } catch (err) {
+        console.error('Error fetching recordings:', err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
-    
+
+    // Initial fetch
+    setLoading(true);
     fetchRecordings();
+
+    // Poll every 10 seconds
+    const interval = setInterval(fetchRecordings, 10000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
   
   return (

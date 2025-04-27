@@ -5,6 +5,7 @@ import threading
 import tempfile
 from pynput import mouse, keyboard
 from loguru import logger
+from timing import get_timestamp_ns
 
 class InputLogger:
     def __init__(self):
@@ -88,7 +89,8 @@ class InputLogger:
         if not self.running:
             return
         
-        timestamp_ns = time.perf_counter_ns()
+        # Use timing module to get timestamp relative to global start time
+        timestamp_ns = get_timestamp_ns()
         event = {
             "t": timestamp_ns,
             "kind": event_type,

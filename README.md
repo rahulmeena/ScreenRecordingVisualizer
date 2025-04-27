@@ -7,7 +7,7 @@ A complete solution for recording and visualizing screen activity with synchroni
 ### Windows Client
 
 A lightweight desktop application that:
-- Records screen at 1280x800 @ 10fps
+- Records screen at Desktop's resolution @ 10fps
 - Captures all mouse and keyboard events
 - Runs in the background with system tray access
 - Minimizes resource usage

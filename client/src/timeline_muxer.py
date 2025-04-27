@@ -153,13 +153,11 @@ class TimelineMuxer:
             
             events = data["events"]
             
-            # Find the first timestamp
-            first_timestamp = events[0]["t"]
-            
-            # Normalize timestamps
+            # Convert timestamps from nanoseconds to milliseconds
+            # But don't renormalize to zero - InputLogger already records relative to start time
             for event in events:
-                # Convert from ns to ms and make relative to first event
-                event["t"] = int((event["t"] - first_timestamp) / 1_000_000)
+                # Convert from ns to ms (keep existing relative timestamps)
+                event["t"] = int(event["t"] / 1_000_000)
             
             return {
                 "meta": {

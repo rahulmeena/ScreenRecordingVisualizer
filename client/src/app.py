@@ -8,6 +8,8 @@ from PIL import Image, ImageDraw
 import tempfile
 from loguru import logger
 
+# Import timing module first to ensure it's initialized
+import timing
 from screen_capture import ScreenCapture
 from input_logger import InputLogger
 from timeline_muxer import TimelineMuxer
@@ -45,7 +47,7 @@ class RecorderApp:
         """Create menu based on current state"""
         return pystray.Menu(
             pystray.MenuItem('Start Recording', self.start_recording, enabled=not self.is_recording),
-            pystray.MenuItem('Stop & Upload', self.stop_recording, enabled=self.is_recording),
+            pystray.MenuItem('Stop and Upload', self.stop_recording, enabled=self.is_recording),
             pystray.MenuItem('Exit', self.exit_app)
         )
     

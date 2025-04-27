@@ -59,25 +59,7 @@ export default function ActionOverlay({
   // Process keyboard events and update buffer
   useEffect(() => {
     // Extract only key_down events
-    // Only apply a delay at the very beginning of the video (first ~1 second)
-    const initialVideoDelay = 0.6; // 600ms startup delay
-    const startupPeriod = 1.0; // Only apply delay during first second of video
-
-    const keyEvents = events.filter(event => {
-      if (event.kind === 'key_down') {
-        const eventTimeSeconds = event.t / 1000;
-        
-        // If we're in the startup period and this is an early event,
-        // apply the delay to compensate for browser rendering
-        if (currentTime <= startupPeriod && eventTimeSeconds <= startupPeriod) {
-          return eventTimeSeconds <= currentTime - initialVideoDelay;
-        }
-        
-        // Otherwise show keys immediately
-        return event.kind === 'key_down';
-      }
-      return false;
-    });
+    const keyEvents = events.filter(event => event.kind === 'key_down');
     
     if (keyEvents.length === 0) {
       // If there are no key events in the current frame, check if we need to clear the buffer
@@ -340,25 +322,8 @@ export default function ActionOverlay({
       }
     }
     
-    // Apply display delay only at the beginning of the video
-    const initialVideoDelay = 0.6; // 600ms startup delay
-    const startupPeriod = 1.0; // Only apply delay during first second of video
-    
-    // Filter events to only show those that should be visible (with delay only at start)
-    const delayedEvents = events.filter(event => {
-      const eventTimeSeconds = event.t / 1000;
-      
-      // If we're in the startup period and this is an early event, apply the delay
-      if (currentTime <= startupPeriod && eventTimeSeconds <= startupPeriod) {
-        return eventTimeSeconds <= currentTime - initialVideoDelay;
-      }
-      
-      // Otherwise show events immediately
-      return true;
-    });
-    
-    // Draw individual events (with delay applied)
-    delayedEvents.forEach(event => {
+    // Draw individual events
+    events.forEach(event => {
       // Calculate animation progress (0 to 1) - events are visible for 1 second
       const eventTimeSeconds = event.t / 1000;
       const timeSinceEvent = currentTime - eventTimeSeconds;
