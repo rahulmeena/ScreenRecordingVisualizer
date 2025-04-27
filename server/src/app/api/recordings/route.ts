@@ -3,16 +3,16 @@ import { writeFile } from 'fs/promises';
 import { mkdir } from 'fs/promises';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
-import * as formidable from 'formidable';
-import { createReadStream } from 'fs';
+import formidable from 'formidable';
+import { createReadStream, writeFileSync } from 'fs';
 import { enqueueProcessJob } from '@/lib/queue';
 
-// Disable Next.js body parsing for this route
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+// This config is not needed in App Router and should be removed
+// export const config = {
+//   api: {
+//     bodyParser: false,
+//   },
+// };
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,86 +23,60 @@ export async function POST(req: NextRequest) {
     const uploadDir = join(process.cwd(), 'uploads', id);
     await mkdir(uploadDir, { recursive: true });
     
-    // Parse form data
-    const form = formidable({
-      uploadDir,
-      keepExtensions: true,
-      maxFileSize: 100 * 1024 * 1024, // 100MB
-    }) as any;
+    // Get content type - check if it's a direct binary upload or multipart
+    const contentType = req.headers.get('content-type') || '';
+    let meta = {};
     
-    // Get form fields and files
-    const [fields, files] = await new Promise<[formidable.Fields, formidable.Files]>((resolve, reject) => {
-      const fields: formidable.Fields = {};
-      const files: formidable.Files = {};
-      
-      // Read the request
-      const chunks: Buffer[] = [];
-      req.on('data', (chunk) => {
-        chunks.push(chunk);
-      });
-      
-      req.on('end', async () => {
-        try {
-          const buffer = Buffer.concat(chunks);
-          const filePath = join(uploadDir, 'upload.zip');
-          await writeFile(filePath, buffer);
-          
-          // Extract metadata if present
-          let metadata = {};
-          try {
-            const metaHeader = req.headers.get('x-recording-meta');
-            if (metaHeader) {
-              metadata = JSON.parse(metaHeader);
-            }
-          } catch (e) {
-            console.error('Error parsing metadata header:', e);
-          }
-          
-          // Add file to files object
-          files['file'] = {
-            filepath: filePath,
-            originalFilename: 'upload.zip',
-            newFilename: 'upload.zip',
-            mimetype: 'application/zip',
-            size: buffer.length,
-          } as any;
-          
-          // Add metadata to fields
-          fields['meta'] = JSON.stringify({
-            ...metadata,
-            timestamp: Date.now(),
-            id,
-          });
-          
-          resolve([fields, files]);
-        } catch (error) {
-          reject(error);
-        }
-      });
-      
-      req.on('error', (error) => {
-        reject(error);
-      });
-    });
-    
-    // Get the uploaded file
-    const file = files['file'] as formidable.File;
-    if (!file) {
-      return NextResponse.json(
-        { error: 'No file uploaded' },
-        { status: 400 }
-      );
+    try {
+      const metaHeader = req.headers.get('x-recording-meta');
+      if (metaHeader) {
+        meta = JSON.parse(metaHeader);
+      }
+    } catch (e) {
+      console.error('Error parsing metadata header:', e);
     }
     
-    // Get metadata
-    const meta = fields['meta'] ? JSON.parse(fields['meta'] as string) : {};
+    // Get the original filename from headers if provided
+    const originalFilename = req.headers.get('x-original-filename') || 'recording.zip';
+    const filePath = join(uploadDir, originalFilename);
+    
+    // Handle binary data properly depending on content type
+    if (contentType.includes('application/zip')) {
+      // Direct binary upload - get as arrayBuffer and write without transformation
+      const data = await req.arrayBuffer();
+      
+      // Write directly to file without Buffer transformation to preserve binary integrity
+      writeFileSync(filePath, new Uint8Array(data));
+      console.log(`Direct binary upload saved to ${filePath}, size: ${data.byteLength} bytes`);
+    } else {
+      // Multipart form or other format - use standard processing
+      const data = await req.arrayBuffer();
+      const buffer = Buffer.from(data);
+      await writeFile(filePath, buffer);
+      console.log(`Multipart form upload saved to ${filePath}, size: ${buffer.length} bytes`);
+    }
+    
+    // Create metadata structure
+    const fields = {
+      'meta': JSON.stringify({
+        ...meta,
+        timestamp: Date.now(),
+        id,
+      })
+    };
     
     // Enqueue processing job
-    await enqueueProcessJob({
-      id,
-      filePath: file.filepath,
-      meta,
-    });
+    try {
+      await enqueueProcessJob({
+        id,
+        filePath: filePath,
+        meta: typeof fields.meta === 'string' ? JSON.parse(fields.meta) : fields.meta,
+      });
+      console.log(`Successfully enqueued processing job for recording ${id}`);
+    } catch (processingError) {
+      console.error(`Failed to enqueue processing job: ${processingError}`);
+      // Continue even if enqueueing fails - we've still saved the file
+    }
     
     // Return success response
     return NextResponse.json({

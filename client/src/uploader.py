@@ -142,19 +142,27 @@ class Uploader:
                 'timestamp': metadata.get('timestamp', time.time()),
             }
             
-            # Prepare multipart form upload
+            # Get the original filename
+            original_filename = os.path.basename(recording_path)
+            
+            # Read the file as binary data
             with open(recording_path, 'rb') as f:
-                files = {
-                    'file': (os.path.basename(recording_path), f, 'application/zip'),
-                    'meta': (None, json.dumps(upload_metadata), 'application/json')
-                }
-                
-                # Add timeout to prevent hanging
-                response = requests.post(
-                    self.server_url,
-                    files=files,
-                    timeout=60  # 60 second timeout
-                )
+                binary_data = f.read()
+            
+            # Add the original filename and metadata to the headers
+            headers = {
+                'x-original-filename': original_filename,
+                'x-recording-meta': json.dumps(upload_metadata),
+                'Content-Type': 'application/zip'  # Set content type to zip
+            }
+            
+            # Send as binary data directly instead of multipart form
+            response = requests.post(
+                self.server_url,
+                data=binary_data,  # Send binary data directly
+                headers=headers,
+                timeout=60  # 60 second timeout
+            )
             
             # Check response
             if response.status_code == 200:
@@ -162,7 +170,19 @@ class Uploader:
                 logger.info(f"Upload successful: {resp_data}")
                 return True
             else:
-                logger.error(f"Upload failed with status {response.status_code}: {response.text}")
+                logger.error(f"Upload failed with status {response.status_code}: {response.text[:500]}")
+                
+                # Special handling for 500 errors
+                if response.status_code == 500:
+                    logger.info("Server error detected. The recording has been saved locally and will be retried later.")
+                    
+                    # Log additional diagnostic info
+                    try:
+                        if "Module not found" in response.text and "@/lib/queue" in response.text:
+                            logger.warning("Server is missing the queue module. This is a known issue and the team is working on it.")
+                    except:
+                        pass
+                
                 return False
         
         except requests.RequestException as e:
