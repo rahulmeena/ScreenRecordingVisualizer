@@ -57,9 +57,13 @@ See [server/README.md](server/README.md) for more details.
 
 ## Demo
 
-![Demo Video](assets/videos/2025-04-28_06-41-37.mkv)
+https://github.com/rahulmeena/ScreenRecordingVisualizer/assets/videos/demo.mp4
 
-You can view the demo video in the `assets/videos` directory of this repository.
+*Note: This is a direct link to the demo video in the `assets/videos` directory.*
+
+For GitHub README viewing:
+1. For best results, upload the video to GitHub Issues/Discussions and use the generated URL
+2. Or you can link to a video hosting service like YouTube
 
 ## Architecture
 
