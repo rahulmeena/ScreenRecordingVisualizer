@@ -6,11 +6,21 @@ import tempfile
 import threading
 from queue import Queue
 import mss
+import numpy as np
 from loguru import logger
+import shutil
 
 class ScreenCapture:
-    def __init__(self, resolution=(1280, 800), fps=10):
-        self.resolution = resolution
+    def __init__(self, resolution=None, fps=10):
+        # Detect system resolution automatically
+        with mss.mss() as sct:
+            monitor = sct.monitors[1]  # Primary monitor
+            system_width = monitor["width"]
+            system_height = monitor["height"]
+            logger.info(f"Detected system resolution: {system_width}x{system_height}")
+        
+        # Use detected resolution if none provided
+        self.resolution = resolution if resolution else (system_width, system_height)
         self.fps = fps
         self.running = False
         self.frame_interval = 1.0 / fps
@@ -77,34 +87,13 @@ class ScreenCapture:
                 # Get the monitor to capture
                 monitor = sct.monitors[1]  # Primary monitor
                 
-                # Calculate region to maintain aspect ratio
-                screen_width = monitor["width"]
-                screen_height = monitor["height"]
-                capture_width, capture_height = self.resolution
-                
-                # Calculate capture region to maintain aspect ratio
-                if screen_width / screen_height > capture_width / capture_height:
-                    # Screen is wider than target - adjust width
-                    scale = capture_height / screen_height
-                    adjusted_width = int(screen_width * scale)
-                    offset_x = (adjusted_width - capture_width) // 2
-                    region = {
-                        "left": monitor["left"] + offset_x,
-                        "top": monitor["top"],
-                        "width": capture_width,
-                        "height": capture_height
-                    }
-                else:
-                    # Screen is taller than target - adjust height
-                    scale = capture_width / screen_width
-                    adjusted_height = int(screen_height * scale)
-                    offset_y = (adjusted_height - capture_height) // 2
-                    region = {
-                        "left": monitor["left"],
-                        "top": monitor["top"] + offset_y,
-                        "width": capture_width,
-                        "height": capture_height
-                    }
+                # Capture the entire monitor
+                region = {
+                    "left": monitor["left"],
+                    "top": monitor["top"],
+                    "width": monitor["width"],
+                    "height": monitor["height"]
+                }
                 
                 last_capture_time = 0
                 
@@ -133,9 +122,16 @@ class ScreenCapture:
     def _encoder_worker(self):
         """Worker thread to encode frames to video"""
         try:
+            # Check if ffmpeg is installed
+            ffmpeg_path = shutil.which("ffmpeg")
+            if not ffmpeg_path:
+                logger.error("FFmpeg not found! Please install FFmpeg and make sure it's in your PATH.")
+                self.running = False
+                return
+                
             # Start ffmpeg process
             cmd = [
-                "ffmpeg",
+                ffmpeg_path,  # Use the full path to ffmpeg
                 "-y",  # Overwrite output file
                 "-f", "rawvideo",
                 "-vcodec", "rawvideo",
@@ -143,9 +139,9 @@ class ScreenCapture:
                 "-video_size", f"{self.resolution[0]}x{self.resolution[1]}",
                 "-framerate", str(self.fps),
                 "-i", "-",  # Input from stdin
-                "-c:v", "h264_nvenc" if self._has_nvidia() else "h264_qsv" if self._has_intel_qsv() else "libx264",
-                "-preset", "ultrafast",
-                "-crf", "28",
+                "-c:v", "libx264",
+                "-preset", "medium",
+                "-crf", "28", # 28 for good enough quality, 38 for worst quality but smallest file
                 "-pix_fmt", "yuv420p",
                 "-r", str(self.fps),
                 self.output_file
@@ -164,8 +160,42 @@ class ScreenCapture:
                 try:
                     timestamp_ns, frame = self.frame_queue.get(timeout=1.0)
                     
+                    # Convert mss screenshot to correct format for ffmpeg
+                    # MSS returns images in BGRA format, we need to resize and convert
+                    frame_array = np.array(frame)
+                    
+                    # Resize if needed to match requested resolution
+                    if frame_array.shape[0] != self.resolution[1] or frame_array.shape[1] != self.resolution[0]:
+                        # Use simple resizing (nearest neighbor for speed)
+                        h_scale = self.resolution[1] / frame_array.shape[0]
+                        w_scale = self.resolution[0] / frame_array.shape[1]
+                        
+                        if h_scale < w_scale:
+                            new_height = self.resolution[1]
+                            new_width = int(frame_array.shape[1] * h_scale)
+                        else:
+                            new_width = self.resolution[0]
+                            new_height = int(frame_array.shape[0] * w_scale)
+                            
+                        # Center the image
+                        temp_frame = np.zeros((self.resolution[1], self.resolution[0], 4), dtype=np.uint8)
+                        
+                        # Simple resize using numpy (faster than cv2 for this use case)
+                        indices_x = np.floor(np.arange(new_width) / new_width * frame_array.shape[1]).astype(np.int32)
+                        indices_y = np.floor(np.arange(new_height) / new_height * frame_array.shape[0]).astype(np.int32)
+                        
+                        # Create the resized image
+                        resized = frame_array[np.ix_(indices_y, indices_x)]
+                        
+                        # Place it in the center
+                        x_offset = (self.resolution[0] - new_width) // 2
+                        y_offset = (self.resolution[1] - new_height) // 2
+                        
+                        temp_frame[y_offset:y_offset+new_height, x_offset:x_offset+new_width] = resized
+                        frame_array = temp_frame
+                    
                     # Write raw frame bytes to ffmpeg
-                    self.ffmpeg_process.stdin.write(frame.rgb)
+                    self.ffmpeg_process.stdin.write(frame_array.tobytes())
                     self.ffmpeg_process.stdin.flush()
                     
                     # Log frame timestamp for debugging
@@ -187,8 +217,12 @@ class ScreenCapture:
     def _has_nvidia(self):
         """Check if NVIDIA GPU is available"""
         try:
+            ffmpeg_path = shutil.which("ffmpeg")
+            if not ffmpeg_path:
+                return False
+                
             result = subprocess.run(
-                ["ffmpeg", "-hide_banner", "-encoders"],
+                [ffmpeg_path, "-hide_banner", "-encoders"],
                 capture_output=True, text=True, check=True
             )
             return "h264_nvenc" in result.stdout
@@ -198,8 +232,12 @@ class ScreenCapture:
     def _has_intel_qsv(self):
         """Check if Intel QuickSync is available"""
         try:
+            ffmpeg_path = shutil.which("ffmpeg")
+            if not ffmpeg_path:
+                return False
+                
             result = subprocess.run(
-                ["ffmpeg", "-hide_banner", "-encoders"],
+                [ffmpeg_path, "-hide_banner", "-encoders"],
                 capture_output=True, text=True, check=True
             )
             return "h264_qsv" in result.stdout

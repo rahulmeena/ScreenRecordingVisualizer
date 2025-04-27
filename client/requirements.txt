@@ -3,4 +3,5 @@ Pillow==10.1.0
 mss==9.0.1
 pynput==1.7.6
 loguru==0.7.0
-requests==2.31.0 
+requests==2.31.0
+numpy==1.26.1 
