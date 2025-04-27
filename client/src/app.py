@@ -38,14 +38,16 @@ class RecorderApp:
         # Create a simple icon
         icon_image = self.create_icon_image()
         
-        # Define menu items
-        self.start_item = pystray.MenuItem('Start Recording', self.start_recording, enabled=True)
-        self.stop_item = pystray.MenuItem('Stop & Upload', self.stop_recording, enabled=False)
-        
-        menu = pystray.Menu(self.start_item, self.stop_item, pystray.MenuItem('Exit', self.exit_app))
-        
-        # Create the tray icon
-        self.icon = pystray.Icon('screen_recorder', icon_image, 'Screen Recorder', menu)
+        # Create the tray icon with dynamic menu
+        self.icon = pystray.Icon('screen_recorder', icon_image, 'Screen Recorder', self.create_menu())
+    
+    def create_menu(self):
+        """Create menu based on current state"""
+        return pystray.Menu(
+            pystray.MenuItem('Start Recording', self.start_recording, enabled=not self.is_recording),
+            pystray.MenuItem('Stop & Upload', self.stop_recording, enabled=self.is_recording),
+            pystray.MenuItem('Exit', self.exit_app)
+        )
     
     def create_icon_image(self):
         """Create a simple icon image"""
@@ -61,9 +63,8 @@ class RecorderApp:
     
     def update_menu_state(self):
         """Update menu items enabled/disabled state"""
-        self.start_item.enabled = not self.is_recording
-        self.stop_item.enabled = self.is_recording
-        self.icon.update_menu()
+        # Update the icon's menu with a fresh menu
+        self.icon.menu = self.create_menu()
     
     def start_recording(self, *args):
         """Start recording screen and inputs"""

@@ -101,7 +101,7 @@ class InputLogger:
     def on_mouse_move(self, x, y):
         """Handle mouse move event"""
         # Only log move events if dragging (to reduce data volume)
-        if any(self.drag_state.values()[:3]):  # Any button is in drag state
+        if self.drag_state['left'] or self.drag_state['right'] or self.drag_state['middle']:  # Any button is in drag state
             self._add_event("mouse_drag", x=x, y=y)
     
     def on_mouse_click(self, x, y, button, pressed):
