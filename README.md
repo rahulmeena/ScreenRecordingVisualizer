@@ -55,6 +55,12 @@ See [server/README.md](server/README.md) for more details.
 
    Or use the pre-built executable if available.
 
+## Demo
+
+![Demo Video](assets/videos/2025-04-28_06-41-37.mkv)
+
+You can view the demo video in the `assets/videos` directory of this repository.
+
 ## Architecture
 
 ```
@@ -66,9 +72,9 @@ See [server/README.md](server/README.md) for more details.
 |  ▸ InputLogger       |           MP4  (H.264)  ⎬  ──────────────┘
 |  ▸ TimelineMuxer     |           events.json    ⎭   
 |  ▸ Uploader          |                              
-+----------------------+                              
-                                                  
-                                     REST / SWR            
++----------------------+                          │    
+                                                  │
+                                     REST / SWR   ▼       
                                  +-------------------------------+
                                  |  Next.js  Web UI (Tailwind)   |
                                  |  • video player (react-player)|
